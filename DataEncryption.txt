@@ -1,0 +1,79 @@
+Data Encryption
+
+12 May 2020
+07:11 AM
+
+Fernet: Class cryptograhy.fernet.Fernet
+
+Fernet guarantees that a message encrypted using it cannot be manipulated or read without the key. It is an implementation of symmetric authenticated cryptography.
+
+>>> key = Fernet.generate_key()
+>>> f = Fernet(key)
+>>> token = f.encrypt(b"my deep dark secret")
+>>> token
+b'...'
+>>> f.decrypt(token)
+b'my deep dark secret'
+
+Classmethod: generate_key()
+Generates a fresh fernet key. Which is used for encryption-decryption.
+
+Encrypt(data): Encrypts the data we passed. The result of this is a 'Fernet Token' and has strong privacy and authenticity guarantees. Data should be byte data.
+
+Decrypt(token): Decrypt a 'Fernet Token' and provides the original plain text.
+
+
+Using passwords with Fernet: 
+
+It is possible to use password with Fernet. To do this, you need to run the password through a key derivation function such as PBKDF2HMAC, bcrypt or Scrypt.
+
+>>> import base64
+>>> import os
+>>> from cryptography.fernet import Fernet
+>>> from cryptography.hazmat.backends import default_backend
+>>> from cryptography.hazmat.primitives import hashes
+>>> from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+>>> password = b"password"
+>>> salt = os.urandom(16)
+>>> kdf = PBKDF2HMAC(
+...     algorithm=hashes.SHA256(),
+...     length=32,
+...     salt=salt,
+...     iterations=100000,
+...     backend=default_backend()
+... )
+>>> key = base64.urlsafe_b64encode(kdf.derive(password))
+>>> f = Fernet(key)
+>>> token = f.encrypt(b"Secret message!")
+>>> token
+b'...'
+>>> f.decrypt(token)
+b'Secret message!'
+
+In this scheme, the salt has to be stored in a retrievable location in order to derive the same key from the password in future.
+
+Implementation:
+Fernet is built on top of a number of standard cryptographic primitives. Specifically it uses:
+• AES in CBC mode with a 128-bit key for encryption; using PKCS7 padding.
+• HMAC using SHA256 for authentication.
+• Initialization vectors are generated using os.urandom().
+
+Limitation:
+Fernet is ideal for encrypting data that easily fits in memory. As a design feature it does not expose unauthenticated bytes. Unfortunately, this makes it generally unsuitable for very large files at this time.
+
+
+Pycrypto Package:
+
+>>> from Crypto.Cipher import AES
+>>> obj = AES.new('This is a key123', AES.MODE_CFB, 'This is an IV456')
+>>> message = "The answer is no"
+>>> ciphertext = obj.encrypt(message)
+>>> ciphertext
+'\xd6\x83\x8dd!VT\x92\xaa`A\x05\xe0\x9b\x8b\xf1'
+>>> obj2 = AES.new('This is a key123', AES.MODE_CFB, 'This is an IV456')
+>>> obj2.decrypt(ciphertext)
+'The answer is no'
+
+If you want to encrypt a message of an arbitrary size use AES.MODE_CFB instead of AES.MODE_CBC
+
+
