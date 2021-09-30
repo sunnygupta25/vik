@@ -1,0 +1,32 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DelimitedText1",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DerivedColumn1"
+				}
+			],
+			"script": "source(output(\n\t\t{First Name} as string,\n\t\tGender as string,\n\t\t{Start Date} as string,\n\t\t{Last Login Time} as string,\n\t\tSalary as string,\n\t\t{Bonus %} as string,\n\t\t{Senior Management} as string,\n\t\tTeam as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\twildcardPaths:['*']) ~> source1\nsource1 derive(O_FNAME = initCap(trim({First Name})),\n\t\tO_GENDER = iif(trim(Gender) == 'Male','M','F'),\n\t\tO_SRMGMT = iif(upper(trim({Senior Management})) == 'TRUE', 'Y','N'),\n\t\tO_BONUS = trim({Bonus %},'%')) ~> DerivedColumn1\nDerivedColumn1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tFIRST_NAME as string,\n\t\tGENDER as string,\n\t\tSALARY as decimal(18,0),\n\t\tSENIOR_MANAEMENT as string,\n\t\tTEAM as string,\n\t\tBONUS as decimal(18,0)\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tFIRST_NAME = O_FNAME,\n\t\tGENDER = O_GENDER,\n\t\tSALARY = Salary,\n\t\tSENIOR_MANAEMENT = O_SRMGMT,\n\t\tTEAM = Team,\n\t\tBONUS = O_BONUS\n\t)) ~> sink1"
+		}
+	}
+}
